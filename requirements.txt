@@ -1,0 +1,8 @@
+pandas
+django
+djangorestframework
+numpy
+joblib
+scikit-learn
+matplotlib
+pydantic
