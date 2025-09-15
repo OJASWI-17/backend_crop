@@ -8,7 +8,46 @@ from .ml_utils import predict_crop
 from rest_framework import viewsets,status
 
 
+import google.generativeai as genai
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
 
+# Load your Gemini API key from environment variable
+genai.configure(api_key=os.getenv("AIzaSyASzOj0vx6oyZdOXZ0YBpooIU1VotYcOnY"))
+
+@csrf_exempt
+def gemini_recommendations(request):
+    if request.method == "POST":
+        try:
+            body = json.loads(request.body)
+            ph = body.get("ph")
+            moisture = body.get("moisture")
+            texture = body.get("texture")
+            crop = body.get("crop")
+
+            prompt = f"""
+            You are an expert agronomist. Based on this soil analysis:
+            - pH level: {ph}
+            - Moisture: {moisture}
+            - Soil texture: {texture}
+            - Recommended crop: {crop}
+
+            Give me 4 practical, actionable farming recommendations to optimize crop yield.
+            Write them as short bullet points.
+            """
+
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            response = model.generate_content(prompt)
+
+            # Split response into bullet points
+            recs = [r.strip("-• ") for r in response.text.split("\n") if r.strip()]
+
+            return JsonResponse({"recommendations": recs})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Only POST allowed"}, status=405)
 @api_view(['POST'])
 def input(request):
     serializer = CropInputSerializer(data=request.data)
