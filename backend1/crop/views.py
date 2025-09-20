@@ -1,9 +1,9 @@
 from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,APIView
 from rest_framework.response import Response
 import json ,joblib ,os
 from django.conf import settings
-from crop.serializers import CropInputSerializer
+from crop.serializers import CropInputSerializer,LoginSerializer
 from .ml_utils import predict_crop
 from rest_framework import viewsets,status
 
@@ -12,6 +12,55 @@ import google.generativeai as genai
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+
+
+
+
+class LoginAPI(APIView):
+    def post(self, request):
+        try:
+            data = request.data
+            serializer = LoginSerializer(data=data)
+            if serializer.is_valid():
+                email = serializer.data['email']
+                password = serializer.data['password']
+                
+                user = authenticate(username=email, password=password)
+
+                if user is not None:
+                    return Response({'status':400,'message':'invalid password','data':{}})
+                
+                
+                refresh = RefreshToken.for_user(user)
+
+                return {
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                }   
+                
+            return Response({'status':400,'message':'something went wrong ','data':serializer.errors})    
+            
+       
+             
+        except Exception as e:      
+            print(e)
+                
+                
+    
+    
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
+
+
 
 # Load your Gemini API key from environment variable
 genai.configure(api_key=os.getenv("AIzaSyASzOj0vx6oyZdOXZ0YBpooIU1VotYcOnY"))

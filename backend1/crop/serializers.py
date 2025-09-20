@@ -18,3 +18,9 @@ class CropInputSerializer(serializers.Serializer):
         max_length=7
     )
     soilType = serializers.CharField(allow_blank=True, required=False)
+    
+    
+    
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(max_length=6)    
