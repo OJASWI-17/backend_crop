@@ -1,4 +1,4 @@
-from crop.views import input,gemini_recommendations,LoginAPI
+from crop.views import input,gemini_recommendations,LoginAPI,RegisterAPI
 from django.urls import path,include
 
 from rest_framework.routers import DefaultRouter
@@ -17,9 +17,10 @@ from rest_framework_simplejwt.views import (
 
 urlpatterns = [
     path('input/', input),
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-  path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    # path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('login/', LoginAPI.as_view()),
+    path('register/', RegisterAPI.as_view()),
     # path('register/', RegisterAPI.as_view()),
     path("gemini/recommendations/", gemini_recommendations),
     # path('login/', login),

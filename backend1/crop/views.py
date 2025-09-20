@@ -1,11 +1,12 @@
 from django.shortcuts import render
-from rest_framework.decorators import api_view,APIView
+from rest_framework.decorators import api_view,APIView,permission_classes
 from rest_framework.response import Response
 import json ,joblib ,os
 from django.conf import settings
-from crop.serializers import CropInputSerializer,LoginSerializer
+from crop.serializers import CropInputSerializer,LoginSerializer,RegisterSerializer
 from .ml_utils import predict_crop
 from rest_framework import viewsets,status
+from rest_framework.permissions import IsAuthenticated
 
 
 import google.generativeai as genai
@@ -19,35 +20,65 @@ from django.contrib.auth import authenticate
 
 
 
+class RegisterAPI(APIView):
+    def post(self, request):
+        data = request.data
+        serializer = RegisterSerializer(data=data)
+        
+        if not serializer.is_valid():
+            return Response({
+                'status': False,
+                'message': serializer.errors,
+            }, status.HTTP_400_BAD_REQUEST)
+        
+        user = serializer.save()  # Save user
+        
+
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        tokens = {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
+
+        return Response({
+            'status': True,
+            'message': 'User registered successfully',
+            'data': serializer.data,
+            'tokens': tokens
+        }, status.HTTP_201_CREATED)
+
+
 class LoginAPI(APIView):
     def post(self, request):
         try:
             data = request.data
+            print(data)
             serializer = LoginSerializer(data=data)
             if serializer.is_valid():
-                email = serializer.data['email']
-                password = serializer.data['password']
+                username = serializer.validated_data['username']
+                password = serializer.validated_data['password']
                 
-                user = authenticate(username=email, password=password)
+                user = authenticate(username=username, password=password)
+                if user is None:
+                    return Response({'status': 400, 'message': 'Invalid username or password', 'data': {}})
 
-                if user is not None:
-                    return Response({'status':400,'message':'invalid password','data':{}})
-                
-                
                 refresh = RefreshToken.for_user(user)
-
-                return {
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                }   
-                
-            return Response({'status':400,'message':'something went wrong ','data':serializer.errors})    
+                return Response({
+                    'status': True,
+                    'message': 'Login successful',
+                    'tokens': {
+                        'refresh': str(refresh),
+                        'access': str(refresh.access_token),
+                    }
+                })
             
+            return Response({'status': 400, 'message': 'Something went wrong', 'data': serializer.errors})
        
-             
-        except Exception as e:      
+        except Exception as e:
             print(e)
-                
+            return Response({'status': 500, 'message': 'Server error', 'data': {}})
+  
                 
     
     
@@ -98,6 +129,8 @@ def gemini_recommendations(request):
 
     return JsonResponse({"error": "Only POST allowed"}, status=405)
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
+
 def input(request):
     serializer = CropInputSerializer(data=request.data)
 
