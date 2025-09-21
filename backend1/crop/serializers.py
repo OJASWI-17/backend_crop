@@ -11,15 +11,21 @@
 
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from .models import CropInput
 
 
-class CropInputSerializer(serializers.Serializer):
-    features = serializers.ListField(
-        child=serializers.FloatField(),
-        min_length=7,
-        max_length=7
-    )
-    soilType = serializers.CharField(allow_blank=True, required=False)
+# class CropInputSerializer(serializers.Serializer): # not connected to database
+#     features = serializers.ListField(
+#         child=serializers.FloatField(),
+#         min_length=7,
+#         max_length=7
+#     )
+#     soilType = serializers.CharField(allow_blank=True, required=False)
+class CropInputSerializer(serializers.ModelSerializer):#  connected to database
+    
+    class Meta:
+        model = CropInput
+        fields = ['features', 'soilType']  # input only
     
 class RegisterSerializer(serializers.ModelSerializer):
     username = serializers.CharField()

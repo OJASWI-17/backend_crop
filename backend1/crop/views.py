@@ -61,7 +61,10 @@ class LoginAPI(APIView):
                 
                 user = authenticate(username=username, password=password)
                 if user is None:
-                    return Response({'status': 400, 'message': 'Invalid username or password', 'data': {}})
+                    return Response(
+    {'status': False, 'message': 'Invalid username or password', 'data': {}},
+    status=status.HTTP_401_UNAUTHORIZED
+)
 
                 refresh = RefreshToken.for_user(user)
                 return Response({
@@ -73,7 +76,11 @@ class LoginAPI(APIView):
                     }
                 })
             
-            return Response({'status': 400, 'message': 'Something went wrong', 'data': serializer.errors})
+            return Response(
+    {'status': False, 'message': 'Invalid input', 'data': serializer.errors},
+    status=status.HTTP_400_BAD_REQUEST
+)
+
        
         except Exception as e:
             print(e)
@@ -95,8 +102,9 @@ def get_tokens_for_user(user):
 
 # Load your Gemini API key from environment variable
 genai.configure(api_key=os.getenv("AIzaSyASzOj0vx6oyZdOXZ0YBpooIU1VotYcOnY"))
-
-@csrf_exempt
+# @csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def gemini_recommendations(request):
     if request.method == "POST":
         try:
@@ -138,6 +146,11 @@ def input(request):
         best_crop, probabilities = predict_crop(serializer.validated_data)
         print("****************88",best_crop)
         print("****************88",probabilities)
+        crop_input = serializer.save(
+        user=request.user,
+        recommended_crop=best_crop,
+        probabilities=probabilities
+    )
         return Response(
             {"recommended_crop": best_crop, "probabilities": probabilities},
             status=status.HTTP_200_OK

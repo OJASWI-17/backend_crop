@@ -6,3 +6,4 @@ joblib
 scikit-learn
 matplotlib
 pydantic
+psycopg2-binary
